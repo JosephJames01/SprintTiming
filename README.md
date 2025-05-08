@@ -56,7 +56,7 @@ This project is a high-precision, Arduino-based sprint timing system. It uses tw
 
 - **RFM69HCW:** Connects to SPI pins and dedicated CS/INT/RST pins on Arduino.
 - **LCD:** Wired in 4-bit mode to digital pins.
-- **Laser Module:** Powered from Arduino, aimed at TEPT4400.
+- **Laser Module:** Powered from Batteries, aimed at TEPT4400.
 - **TEPT4400:** Connected to an analog input, with a pull-down resistor.
 - **Button:** Connected to a digital input with 0.1μF capacitor for debounce.
 - **Amp/Speaker:** Amp shutdown and audio pins controlled by Arduino.
