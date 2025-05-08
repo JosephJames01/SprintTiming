@@ -66,3 +66,42 @@ This project is a high-precision, Arduino-based sprint timing system. It uses tw
 ## Software Setup
 
 1. **Clone this repository:**
+
+
+2. **Install Arduino Libraries:**
+- [RadioHead (RH_RF69)](https://www.airspayce.com/mikem/arduino/RadioHead/)
+- LiquidCrystal
+
+3. **Upload the Code:**
+- Upload the appropriate sketch to each Arduino (start and finish).
+
+---
+
+## Usage
+
+1. Assemble the hardware as described above.
+2. Power both modules using battery packs.
+3. Press the button on the start module to begin the sequence.
+4. Break the laser beam at the finish module to record the time.
+5. View results and sync status on the LCD.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Acknowledgements
+
+- Inspired by IEEE 1588 PTP for clock synchronization.
+- Uses the [RadioHead](https://www.airspayce.com/mikem/arduino/RadioHead/) library.
+
+---
+
+**Maintainer:** JosephJames01  
+**Last updated:** May 2025
+
+*For questions or contributions, please open an issue or pull request on GitHub/message me on Linkedin!*
+
