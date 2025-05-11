@@ -32,8 +32,8 @@ This project is a high-precision, Arduino-based sprint timing system. It uses tw
 | 3D-printed/Electrical Box | 2        | Enclosures                                   |
 | Battery Pack (7-12V)      | 3        | Portable power                               |
 | Wiring + miscellaneous    | as requ  | Connection                                   |
-| camera stands and         |          | position                                     |
-| connectors for stands     |          |
+| camera stands             | as requ  | position                                     |
+| connectors for stands     | as requ  |
 
 ---
 
