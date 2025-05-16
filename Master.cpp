@@ -20,6 +20,11 @@ uint32_t randomDelay = 0;
 uint32_t eventTimestamp = 0;
 bool setSoundPlayed = false;
 bool waitingForRandomDelay = false;
+bool sendingEvent = false;
+unsigned long lastSendTime = 0;
+const unsigned long RETRY_INTERVAL = 1000; // 1 second
+bool ackReceived = false;
+uint8_t eventPacket[5];
 
 void setup() {
   Serial.begin(115200);
@@ -49,10 +54,6 @@ rf69.spiWrite(RH_RF69_REG_06_FDEVLSB, 0xD5);     // Freq deviation LSB (~5kHz)
 rf69.spiWrite(RH_RF69_REG_19_RXBW, 0x40);        // RX bandwidth 10.4kHz
 rf69.spiWrite(RH_RF69_REG_1A_AFCBW, 0x40);       // AFC bandwidth 10.4kHz
 
-
-
-
-  
   PCICR |= (1 << PCIE2);
   PCMSK2 |= (1 << PCINT21);
 }
@@ -95,11 +96,13 @@ void loop() {
     if (waitingForRandomDelay && elapsed >= 5000 + randomDelay) {
       eventTimestamp = micros();
       playSound(700, 255, 110);   // "starter" sound
-      sendEventPacket();
+      startEventSend();
       sequenceActive = false;
       digitalWrite(AMP_SHUTDOWN, LOW);
+
     }
   }
+  sendEventPacket();
 }
 
 // Optimized ISR with debouncing
@@ -134,56 +137,55 @@ void sendSyncPacket() {
   };
   rf69.send(packet, sizeof(packet));
   rf69.waitPacketSent();
+  rf69.setModeRx();
   digitalWrite(SYNC_LED, LOW);
 }
 
-void sendEventPacket() {
-  bool received = false;
-  uint8_t packet[5] = {
-    'E',
-    (uint8_t)(eventTimestamp >> 24),
-    (uint8_t)(eventTimestamp >> 16),
-    (uint8_t)(eventTimestamp >> 8),
-    (uint8_t)eventTimestamp
-  };
-  
-  unsigned long startTime = millis();
-  
-  while(!received && millis() - startTime < 1000) {
 
-    rf69.send(packet, sizeof(packet));
+
+void startEventSend() {
+  eventPacket[0] = 'E';
+  eventPacket[1] = (uint8_t)(eventTimestamp >> 24);
+  eventPacket[2] = (uint8_t)(eventTimestamp >> 16);
+  eventPacket[3] = (uint8_t)(eventTimestamp >> 8);
+  eventPacket[4] = (uint8_t)eventTimestamp;
+  sendingEvent = true;
+  ackReceived = false;
+  lastSendTime = 0; 
+  Serial.println("done");
+}
+
+
+void sendEventPacket() {
+  if (!sendingEvent) return; // Nothing to do
+
+  // Send packet if never sent or retry interval elapsed
+  if (lastSendTime == 0 || (millis() - lastSendTime >= RETRY_INTERVAL)) {
+    rf69.send(eventPacket, sizeof(eventPacket));
     rf69.waitPacketSent();
-    
-    
-    unsigned long ackStart = millis();
-    while(!received && millis() - ackStart < 200) { 
-      if(rf69.available()) {
-        uint8_t buf[5];
-        uint8_t len = sizeof(buf);
-        
-        if(rf69.recv(buf, &len)) {
-          if(buf[0] == 'E') {
-            // Verify timestamp match
-            uint32_t receivedTimestamp = (uint32_t)buf[1] << 24 |
-                                        (uint32_t)buf[2] << 16 |
-                                        (uint32_t)buf[3] << 8 |
-                                        buf[4];
-                                        
-            if(receivedTimestamp == eventTimestamp) {
-              received = true;
-              Serial.println("Valid ACK received");
-            }
-          }
-        }
+    rf69.setModeRx();
+    lastSendTime = millis();
+  }
+
+  // Check for ACK
+  if (rf69.available()) {
+    uint8_t buf[5];
+    uint8_t len = sizeof(buf);
+    Serial.print("available");
+    if (rf69.recv(buf, &len)) {
+      Serial.print("here");
+      if (buf[0] == 'A') { // ACK identifier
+        ackReceived = true;
+        sendingEvent = false; 
+        Serial.println("recieved!");
+       
       }
     }
-    
-    
-    if(!received) Serial.println("No ACK - resending");
   }
-  
-  if(!received) Serial.println("Failed after 1 second");
+
+
 }
+
 
 
 void playSound(unsigned int frequency, int volume, unsigned long durationMs) {
@@ -199,4 +201,3 @@ void playSound(unsigned int frequency, int volume, unsigned long durationMs) {
   }
   analogWrite(AUDIO_PIN, 0);
 }
-

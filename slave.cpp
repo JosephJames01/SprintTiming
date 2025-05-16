@@ -52,17 +52,17 @@ void handleLaser() {
   const int currentLaser = analogRead(LASER_PIN);
   
   // Update baseline every 5 seconds with diagnostics
-  if(millis() - lastBaselineUpdate > 5000) {
+  if(millis() - lastBaselineUpdate > 1000) {
     baselineLaser = currentLaser;
     lastBaselineUpdate = millis();
     // Serial.print("[LASER] New baseline: ");
     // Serial.print(baselineLaser);
-    // Serial.print(" | Current: ");
-    // Serial.println(currentLaser);
+     Serial.print(" | Current: ");
+     Serial.println(currentLaser);
   }
 
   // Detect beam break
-  if(!beamBroken && currentLaser < (baselineLaser - 7)) {
+  if(!beamBroken && currentLaser < (baselineLaser - 500)) {
     beamBroken = true;
     beamBreakTime = micros() - baseTime;
     
@@ -95,6 +95,7 @@ void setup() {
     Serial.println("Radio Fail!");
     while(1);
   }
+  rf69.setTxPower(20, true);
   SPI.setClockDivider(SPI_CLOCK_DIV2);
   // Example configuration for ~1.2kbps (long range)
   // Configure registers sequentially
@@ -151,7 +152,7 @@ void loop() {
            Serial.println("μs");
            lcd.clear();
            lcd.print(error);
-            lcd.setCursor(12, 1); 
+            lcd.setCursor(10, 1); 
             lcd.print("B:"); 
             lcd.print(baselineLaser);
              lcd.setCursor(0, 1);
@@ -178,22 +179,19 @@ void loop() {
                         buf[4];
         Serial.print("[EVENT] Received timestamp: ");
         Serial.println(eventTimestamp);
-       
-        event ++;
-        //Timestamp Insurance 
-        uint8_t response[5];
-        response[0] = 'E';  
-        response[1] = (eventTimestamp >> 24) & 0xFF;
-        response[2] = (eventTimestamp >> 16) & 0xFF;
-        response[3] = (eventTimestamp >> 8) & 0xFF;
-        response[4] = eventTimestamp & 0xFF;
+        uint8_t packet[5] = {
+        'A',
+        (uint8_t)(eventTimestamp >> 24),
+        (uint8_t)(eventTimestamp >> 16),
+        (uint8_t)(eventTimestamp >> 8),
+        (uint8_t)eventTimestamp
+        };
 
-        // Send response
-        rf69.send(response, sizeof(response));
+        rf69.send(packet, sizeof(packet));
         rf69.waitPacketSent();
-
-
-
+        Serial.println("sent");
+        rf69.setModeRx();
+        event ++;
       }
     }
   }
